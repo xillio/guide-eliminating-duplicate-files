@@ -1,0 +1,47 @@
+/**
+ * This script is responsible for removing duplicates found in the
+ * scraped files. Make sure you run ScrapeFiles.xill on ALL folders
+ * that should be analyzed before running this robot.
+ *
+ * This is part of the 'Eliminating Duplicates' guide on http://xill.io
+ *
+ * @author Thomas Biesaart
+ *
+ */
+
+use File, Hash, System;
+include Persist;
+
+removeDuplicates();
+
+function removeDuplicates() {
+    // First we generate hashes for all size groups
+    generateHashes();
+    
+    // Then we fetch all duplicates from the database
+    deleteFiles();
+}
+
+private function generateHashes() {
+    foreach(group in getFilesBySize()) {
+        foreach(file in group.paths) {
+            // Calculate the md5 hash for this file
+            var stream = File.openRead(file);
+            var md5 = Hash.toMD5(stream);
+            update(file, {"md5": md5});
+        }
+    }
+}
+
+private function deleteFiles() {
+    foreach(group in getDuplicates()) {
+        var first = true;
+        foreach(file in group.paths) {
+            if(first) {
+                first = false;
+            } else {
+                File.delete(file);
+            }
+        }
+    }
+}

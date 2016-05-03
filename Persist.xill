@@ -1,0 +1,76 @@
+/**
+ * This script is responsible for performing all operations related to
+ * the database.
+ *
+ * This is part of the 'Eliminating Duplicates' guide on http://xill.io
+ *
+ * @author Thomas Biesaart
+ *
+ */
+
+use Mongo;
+
+// Connect to a local MongoDB database
+var mongo = Mongo.connect("eliminate_duplicates");
+
+function insert(file) {
+    Mongo.insert("files", [file], false, mongo);
+}
+
+function update(file, update) {
+    Mongo.update("files", {"_id": file}, {"$set": update}, {}, mongo);
+}
+
+function getFilesBySize() {
+    return Mongo.aggregate("files", 
+        [
+            // First we group by size
+            {
+                "$group": {
+                    "_id": "$size",
+                    "paths": {
+                        "$push": "$_id"
+                    }
+                }
+            },
+            // Then we remove the groups with only one match
+            // AKA: No second match
+            {
+                "$match": {
+                    "paths.1": {"$exists": true}
+                }
+            }
+        ], 
+        {}, 
+        mongo
+    );
+}
+
+function getDuplicates() {
+    return Mongo.aggregate("files", 
+        [
+            {
+                 "$match": {
+                    "md5": {
+                        "$exists": true
+                    }
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$md5",
+                    "paths": {
+                        "$push": "$_id"
+                    }
+                }
+            },
+            {
+                "$match": {
+                    "paths.1": {"$exists": true}
+                }
+            }
+        ], 
+        {}, 
+        mongo
+    );
+}

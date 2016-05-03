@@ -1,0 +1,35 @@
+/**
+ * This script is responsible for walking through a folder and sending
+ * all files to the persistence robot.
+ *
+ * This is part of the 'Eliminating Duplicates' guide on http://xill.io
+ *
+ * @author Thomas Biesaart
+ *
+ */
+
+use File, String, System;
+include Persist;
+
+scrapeFiles("D:\\OneDrive");
+
+function scrapeFiles(folder) {
+    // First we process all files
+    foreach<processFile>(File.iterateFiles(folder));
+    
+    // Then we process all subfolders
+    foreach(subfolder in File.iterateFolders(folder)) {
+        if(subfolder.isAccessible) {
+            scrapeFiles(subfolder.path);
+        }
+    }
+}
+
+private function processFile(file) {
+    var entry = {
+        "_id": file,
+        "size": File.getSize(file)
+    };
+    
+    insert(entry);
+}
